@@ -10,10 +10,13 @@ interface UploadModalProps {
 interface UploadProgress {
   total: number
   done: number
-  current: string
+  running: number
+  activeNames: string[]
   uploaded: number
   errors: string[]
 }
+
+const CONCURRENCY_OPTIONS = [1, 2, 3, 5, 10]
 
 export default function UploadModal({ onClose }: UploadModalProps) {
   const client = useCredStore((s) => s.client)
@@ -23,6 +26,8 @@ export default function UploadModal({ onClose }: UploadModalProps) {
   const [pending, setPending] = useState<File[]>([])
   const [progress, setProgress] = useState<UploadProgress | null>(null)
   const [done, setDone] = useState(false)
+  const [concurrency, setConcurrency] = useState(3)
+  const [failedFiles, setFailedFiles] = useState<File[]>([])
 
   function addFiles(newFiles: FileList | File[]) {
     const arr = Array.from(newFiles)
@@ -42,30 +47,84 @@ export default function UploadModal({ onClose }: UploadModalProps) {
     if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files)
   }
 
-  async function handleUpload() {
-    if (!client || pending.length === 0) return
+  async function runUploadBatch(targetFiles: File[]) {
+    if (!client || targetFiles.length === 0) return
     setDone(false)
-    const total = pending.length
+    setFailedFiles([])
+
+    const total = targetFiles.length
     const errors: string[] = []
+    const failed: File[] = []
+    const activeNames = new Set<string>()
     let uploaded = 0
 
-    for (let i = 0; i < pending.length; i++) {
-      const file = pending[i]
-      setProgress({ total, done: i, current: file.name, uploaded, errors })
-      try {
-        await uploadAuthFile(client, file)
-        uploaded++
-      } catch (err) {
-        errors.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`)
+    let doneCount = 0
+    let cursor = 0
+
+    const updateProgress = () => {
+      setProgress({
+        total,
+        done: doneCount,
+        running: activeNames.size,
+        activeNames: Array.from(activeNames),
+        uploaded,
+        errors: [...errors],
+      })
+    }
+
+    updateProgress()
+
+    const worker = async () => {
+      while (true) {
+        const index = cursor
+        cursor += 1
+        if (index >= total) return
+
+        const file = targetFiles[index]
+        activeNames.add(file.name)
+        updateProgress()
+
+        try {
+          await uploadAuthFile(client, file)
+          uploaded += 1
+        } catch (err) {
+          failed.push(file)
+          errors.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`)
+        } finally {
+          activeNames.delete(file.name)
+          doneCount += 1
+          updateProgress()
+        }
       }
     }
 
-    setProgress({ total, done: total, current: '', uploaded, errors })
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, total) }, () => worker())
+    )
+
+    setFailedFiles(failed)
+    setProgress({
+      total,
+      done: total,
+      running: 0,
+      activeNames: [],
+      uploaded,
+      errors,
+    })
+
     setDone(true)
     setPending([])
     if (uploaded > 0) {
       await refresh()
     }
+  }
+
+  async function handleUpload() {
+    await runUploadBatch(pending)
+  }
+
+  async function handleRetryFailed() {
+    await runUploadBatch(failedFiles)
   }
 
   const uploading = progress !== null && !done
@@ -119,7 +178,21 @@ export default function UploadModal({ onClose }: UploadModalProps) {
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between text-2xs text-subtle mb-1">
                     <span>待上传文件 ({pending.length})</span>
-                    <button onClick={() => setPending([])} className="hover:text-ink transition-colors">清空</button>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1">
+                        <span>并发</span>
+                        <select
+                          value={concurrency}
+                          onChange={(e) => setConcurrency(Number(e.target.value))}
+                          className="text-2xs text-ink bg-canvas border border-border rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-coral"
+                        >
+                          {CONCURRENCY_OPTIONS.map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button onClick={() => setPending([])} className="hover:text-ink transition-colors">清空</button>
+                    </div>
                   </div>
                   <div className="max-h-40 overflow-y-auto flex flex-col gap-1">
                     {pending.map((f) => (
@@ -145,7 +218,11 @@ export default function UploadModal({ onClose }: UploadModalProps) {
           {uploading && progress && (
             <div className="flex flex-col gap-3 py-2">
               <div className="flex items-center justify-between text-2xs text-subtle">
-                <span className="truncate max-w-[280px]">{progress.current}</span>
+                <span className="truncate max-w-[280px]">
+                  {progress.activeNames.length > 0
+                    ? `上传中：${progress.activeNames.slice(0, 2).join('、')}${progress.activeNames.length > 2 ? ` 等 ${progress.activeNames.length} 个` : ''}`
+                    : '准备中'}
+                </span>
                 <span className="tabular-nums flex-shrink-0 ml-2">{progress.done} / {progress.total}</span>
               </div>
               <div className="h-1.5 bg-border rounded-full overflow-hidden">
@@ -154,6 +231,7 @@ export default function UploadModal({ onClose }: UploadModalProps) {
                   style={{ width: `${percent}%` }}
                 />
               </div>
+              <p className="text-2xs text-subtle text-center">并发中：{progress.running}</p>
               <p className="text-2xs text-muted text-center">{percent}%</p>
             </div>
           )}
@@ -167,6 +245,14 @@ export default function UploadModal({ onClose }: UploadModalProps) {
                   <span className="ml-2">失败：<span className="text-[#B94040]">{progress.errors.length}</span> 个</span>
                 )}
               </p>
+              {progress.errors.length > 0 && (
+                <button
+                  onClick={handleRetryFailed}
+                  className="mt-2 px-2.5 py-1 text-2xs font-medium text-coral border border-coral/40 rounded hover:bg-coral/10 transition-colors"
+                >
+                  一键重试失败项 ({progress.errors.length})
+                </button>
+              )}
               {progress.errors.length > 0 && (
                 <div className="mt-2 flex flex-col gap-0.5 max-h-28 overflow-y-auto">
                   {progress.errors.map((e, i) => (

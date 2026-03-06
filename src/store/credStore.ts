@@ -63,17 +63,7 @@ export const useCredStore = create<CredStore>((set) => ({
   updateFile: (name, updated) =>
     set((state) => {
       const files = state.files.map((f) => (f.name === name ? { ...f, ...updated } : f))
-      const nextTestResults = { ...state.testResults }
-
-      if (Object.prototype.hasOwnProperty.call(updated, 'status') || Object.prototype.hasOwnProperty.call(updated, 'disabled')) {
-        delete nextTestResults[name]
-      }
-
-      if (state.connection?.endpoint) {
-        saveTestResults(state.connection.endpoint, nextTestResults)
-      }
-
-      return { files, testResults: nextTestResults }
+      return { files }
     }),
 
   removeFile: (name) =>
