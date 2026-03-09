@@ -90,7 +90,7 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
 
       <div className="px-3 py-3 w-56 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <StatusBadge status={displayStatus} />
+          <StatusBadge status={displayStatus} errorMessage={displayStatus === 'error' ? (testResult?.message ?? file.status_message) : undefined} />
           {testResult?.quota && (
             <QuotaBar usedPercent={testResult.quota.rate_limit.primary_window?.used_percent ?? 0} resetAfterSeconds={testResult.quota.rate_limit.primary_window?.reset_after_seconds} />
           )}

@@ -13,3 +13,6 @@ dist/
 
 .wrangler/
 .cache/
+
+scripts/
+outputs/

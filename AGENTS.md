@@ -20,14 +20,14 @@ This project prioritizes operator efficiency, low-latency status checks, and cle
 - State: Zustand
 - Styling: Tailwind CSS
 - Large list rendering: `@tanstack/react-virtual`
-- Package manager: **pnpm only**
+- Package manager: **bun or npm**
 
 ### Commands
 
 ```bash
-pnpm install
-pnpm dev
-pnpm build
+bun install
+bun dev
+bun build
 ```
 
 ---
@@ -142,7 +142,7 @@ Note: this endpoint is internal and may change. Keep graceful fallback behavior.
 Run:
 
 ```bash
-pnpm build
+bun build
 ```
 
 Must verify:

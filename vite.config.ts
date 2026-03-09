@@ -2,6 +2,8 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
+import registerPlugin from './vite-register-plugin'
+import checkinPlugin from './vite-checkin-plugin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -9,14 +11,17 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_ENDPOINT || 'http://localhost:8317'
 
   return {
-    plugins: [tailwindcss(), react()],
+    plugins: [tailwindcss(), react(), registerPlugin(), checkinPlugin()],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
-    ...(useProxy && {
-      server: {
+    server: {
+      watch: {
+        ignored: ['**/output/**', '**/outputs/**', '**/results.txt'],
+      },
+      ...(useProxy && {
         proxy: {
           '/api/management': {
             target: proxyTarget,
@@ -24,7 +29,7 @@ export default defineConfig(({ mode }) => {
             rewrite: (p) => p.replace(/^\/api\/management/, '/v0/management'),
           },
         },
-      },
-    }),
+      }),
+    },
   }
 })

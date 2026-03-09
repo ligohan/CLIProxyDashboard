@@ -40,6 +40,7 @@ export type TestStatus =
   | 'unknown'
   | 'testing'
   | 'valid'
+  | 'low'
   | 'quota'
   | 'expired'
   | 'error'
@@ -91,6 +92,32 @@ export interface TestResult {
   copilotQuota?: CopilotQuota
 }
 
+export interface UsageRequestDetail {
+  timestamp: string
+  source: string
+  auth_index: string
+  tokens: {
+    input_tokens: number
+    output_tokens: number
+    reasoning_tokens: number
+    cached_tokens: number
+    total_tokens: number
+  }
+  failed: boolean
+}
+
+export interface UsageModelStats {
+  total_requests: number
+  total_tokens: number
+  details: UsageRequestDetail[]
+}
+
+export interface UsageApiStats {
+  total_requests: number
+  total_tokens: number
+  models: Record<string, UsageModelStats>
+}
+
 export interface UsageStats {
   total_requests: number
   success_count: number
@@ -100,11 +127,26 @@ export interface UsageStats {
   requests_by_hour: Record<string, number>
   tokens_by_day: Record<string, number>
   tokens_by_hour: Record<string, number>
+  apis: Record<string, UsageApiStats>
 }
 
 export interface UsageResponse {
   usage: UsageStats
   failed_requests: number
+}
+
+export interface LogsResponse {
+  lines: string[]
+  'line-count': number
+  'latest-timestamp': number
+}
+
+export interface LoggingToFileResponse {
+  'logging-to-file': boolean
+}
+
+export interface SetLoggingToFileRequest {
+  'logging-to-file': boolean
 }
 
 export interface ConnectionConfig {

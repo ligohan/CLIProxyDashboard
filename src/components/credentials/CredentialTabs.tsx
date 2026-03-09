@@ -95,7 +95,8 @@ export default function CredentialTabs() {
     if (file.disabled) return 99
     const status = getEffectiveStatus(file, testResults[file.name])
     if (status === 'valid') return 0
-    if (status === 'testing') return 1
+    if (status === 'low') return 1
+    if (status === 'testing') return 2
     if (status === 'quota') return 3
     if (status === 'expired' || status === 'error') return 4
     return 2
@@ -145,7 +146,7 @@ export default function CredentialTabs() {
       if (quickFilter === 'disabled') return f.disabled && status !== 'quota'
       if (quickFilter === 'error') return status === 'error'
       if (quickFilter === 'has-quota') return !f.disabled && hasAvailableQuota(f)
-      if (quickFilter === 'other') return status !== 'quota' && !(!f.disabled && hasAvailableQuota(f))
+      if (quickFilter === 'other') return status !== 'quota' && status !== 'low' && !(!f.disabled && hasAvailableQuota(f))
       if (quickFilter === 're-enable') return f.disabled && hasAvailableQuota(f)
       return true
     })
