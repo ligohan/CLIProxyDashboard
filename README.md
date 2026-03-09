@@ -1,5 +1,7 @@
 # codex-detect
 
+[中文](./README_zh.md) | English
+
 CLIProxyAPI auth dashboard.
 
 ## Features
@@ -19,6 +21,20 @@ CLIProxyAPI auth dashboard.
   - One-click retry for failed uploads
 - Test result persistence across page refresh
   - Toggling enable/disable no longer clears existing test results
+
+## Screenshots
+
+### Dashboard
+![Dashboard](./public/Dashboard.png)
+
+### Usage Monitoring
+![Usage](./public/Usage.png)
+
+### Daily Check-in
+![Sign](./public/Sign.png)
+
+### Registration Scripts
+![Scripts](./public/Scripts.png)
 
 ## Development
 
