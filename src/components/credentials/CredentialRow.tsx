@@ -8,9 +8,11 @@ import type { AuthFile } from '@/types/api'
 interface CredentialRowProps {
   file: AuthFile
   isSelected: boolean
+  showPlanColumn: boolean
+  showTestAction: boolean
 }
 
-export default function CredentialRow({ file, isSelected }: CredentialRowProps) {
+export default function CredentialRow({ file, isSelected, showPlanColumn, showTestAction }: CredentialRowProps) {
   const store = useCredStore.getState()
   const client = useCredStore((s) => s.client)
   const testResult = useCredStore((s) => s.testResults[file.name])
@@ -89,18 +91,20 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
         </span>
       </div>
 
-      <div className="px-3 py-3 w-20 flex-shrink-0">
-        {planBadge ? (
-          <span
-            className="inline-block text-2xs font-medium px-1.5 py-0.5 rounded whitespace-nowrap"
-            style={{ backgroundColor: planBadge.backgroundColor, color: planBadge.color }}
-          >
-            {planBadge.label}
-          </span>
-        ) : (
-          <span className="text-2xs text-subtle">—</span>
-        )}
-      </div>
+      {showPlanColumn && (
+        <div className="px-3 py-3 w-20 flex-shrink-0">
+          {planBadge ? (
+            <span
+              className="inline-block text-2xs font-medium px-1.5 py-0.5 rounded whitespace-nowrap"
+              style={{ backgroundColor: planBadge.backgroundColor, color: planBadge.color }}
+            >
+              {planBadge.label}
+            </span>
+          ) : (
+            <span className="text-2xs text-subtle">—</span>
+          )}
+        </div>
+      )}
 
       <div className="px-3 py-3 w-56 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -129,9 +133,11 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
 
       <div className="px-3 pr-4 py-3 w-24 flex-shrink-0">
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ActionButton title="测试" onClick={handleTest}>
-            <PlayIcon />
-          </ActionButton>
+          {showTestAction && (
+            <ActionButton title="测试" onClick={handleTest}>
+              <PlayIcon />
+            </ActionButton>
+          )}
 
           <ActionButton
             title={file.disabled ? '启用' : '禁用'}

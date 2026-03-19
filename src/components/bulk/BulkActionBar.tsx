@@ -2,7 +2,7 @@ import { useCredStore } from '@/store/credStore'
 import { deleteAuthFile, patchAuthFileStatus } from '@/lib/management'
 import { useBatchTest } from '@/hooks/useBatchTest'
 
-export default function BulkActionBar() {
+export default function BulkActionBar({ showTestAction }: { showTestAction: boolean }) {
   const selected = useCredStore((s) => s.selected)
   const files = useCredStore((s) => s.files)
   const client = useCredStore((s) => s.client)
@@ -55,13 +55,15 @@ export default function BulkActionBar() {
 
         <div className="w-px h-4 bg-subtle/30" />
 
-        <button
-          onClick={handleBulkTest}
-          disabled={isRunning}
-          className="hover:text-coral-light disabled:opacity-50 transition-colors text-xs font-medium"
-        >
-          测试
-        </button>
+        {showTestAction && (
+          <button
+            onClick={handleBulkTest}
+            disabled={isRunning}
+            className="hover:text-coral-light disabled:opacity-50 transition-colors text-xs font-medium"
+          >
+            测试
+          </button>
+        )}
 
         <button
           onClick={() => handleBulkDisable(false)}
@@ -99,4 +101,3 @@ export default function BulkActionBar() {
     </div>
   )
 }
-

@@ -24,6 +24,8 @@ interface CredentialTableProps {
   loading: boolean
   sortMode?: SortMode
   onSortChange?: (mode: SortMode) => void
+  showPlanColumn: boolean
+  showTestAction: boolean
 }
 
 const ROW_HEIGHT = 56
@@ -60,7 +62,14 @@ function getDirection(mode: SortMode | undefined, col: SortCol): 'asc' | 'desc' 
   return null
 }
 
-export default function CredentialTable({ files, loading, sortMode, onSortChange }: CredentialTableProps) {
+export default function CredentialTable({
+  files,
+  loading,
+  sortMode,
+  onSortChange,
+  showPlanColumn,
+  showTestAction,
+}: CredentialTableProps) {
   const selected = useCredStore((s) => s.selected)
   const { selectAll, clearSelection } = useCredStore.getState()
 
@@ -143,7 +152,9 @@ export default function CredentialTable({ files, loading, sortMode, onSortChange
             onClick={handleColSort}
           />
           <div className="px-3 py-3 w-24 flex-shrink-0 whitespace-nowrap">提供商</div>
-          <div className="px-3 py-3 w-20 flex-shrink-0 whitespace-nowrap">套餐</div>
+          {showPlanColumn && (
+            <div className="px-3 py-3 w-20 flex-shrink-0 whitespace-nowrap">套餐</div>
+          )}
           <SortHeader
             label="状态 / 额度"
             col="status"
@@ -219,6 +230,8 @@ export default function CredentialTable({ files, loading, sortMode, onSortChange
                   <CredentialRow
                     file={file}
                     isSelected={selected.has(file.name)}
+                    showPlanColumn={showPlanColumn}
+                    showTestAction={showTestAction}
                   />
                 </div>
               )

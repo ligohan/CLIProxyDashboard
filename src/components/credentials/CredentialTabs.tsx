@@ -29,8 +29,12 @@ function loadSortMode(): SortMode {
   return 'default'
 }
 
-export default function CredentialTabs() {
-  const [activeProvider, setActiveProvider] = useState<string>('全部')
+interface CredentialTabsProps {
+  activeProvider: string
+  onActiveProviderChange: (provider: string) => void
+}
+
+export default function CredentialTabs({ activeProvider, onActiveProviderChange }: CredentialTabsProps) {
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false)
   const [bulkDisabling, setBulkDisabling] = useState(false)
   const [sortMode, setSortMode] = useState<SortMode>(() => loadSortMode())
@@ -442,7 +446,7 @@ export default function CredentialTabs() {
             return (
               <button
                 key={provider}
-                onClick={() => setActiveProvider(provider)}
+                onClick={() => onActiveProviderChange(provider)}
                 className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
                   isActive ? '-mb-px' : 'text-subtle hover:text-ink'
                 }`}
@@ -505,13 +509,15 @@ export default function CredentialTabs() {
             刷新
           </button>
 
-          <button
-            onClick={() => testBatch(displayFiles)}
-            disabled={isRunning || displayFiles.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-2xs font-medium text-coral rounded hover:bg-coral/10 disabled:opacity-50 transition-colors"
-          >
-            批量测试
-          </button>
+          {showCodexPlanFilters && (
+            <button
+              onClick={() => testBatch(displayFiles)}
+              disabled={isRunning || displayFiles.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-2xs font-medium text-coral rounded hover:bg-coral/10 disabled:opacity-50 transition-colors"
+            >
+              批量测试
+            </button>
+          )}
 
           <div className="relative" ref={menuRef}>
             <button
@@ -658,7 +664,14 @@ export default function CredentialTabs() {
         </span>
       </div>
 
-      <CredentialTable files={displayFiles} loading={loading} sortMode={sortMode} onSortChange={setSortMode} />
+      <CredentialTable
+        files={displayFiles}
+        loading={loading}
+        sortMode={sortMode}
+        onSortChange={setSortMode}
+        showPlanColumn={showCodexPlanFilters}
+        showTestAction={showCodexPlanFilters}
+      />
 
       {uploadOpen && <UploadModal onClose={() => setUploadOpen(false)} />}
     </div>

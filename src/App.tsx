@@ -8,6 +8,7 @@ import CredentialTabs from '@/components/credentials/CredentialTabs'
 import BulkActionBar from '@/components/bulk/BulkActionBar'
 import UsagePanel from '@/components/usage/UsagePanel'
 import SettingsPanel from '@/components/settings/SettingsPanel'
+import { isCodexProviderName } from '@/utils/keyUtils'
 
 type ActiveView = 'credentials' | 'usage' | 'settings'
 
@@ -15,6 +16,12 @@ export default function App() {
   const { reconnectFromStorage } = useConnection()
   const connected = useCredStore((s) => s.connected)
   const [activeView, setActiveView] = useState<ActiveView>('credentials')
+  const [activeProvider, setActiveProvider] = useState('全部')
+
+  const showCodexListActions =
+    activeView === 'credentials'
+    && activeProvider !== '全部'
+    && isCodexProviderName(activeProvider)
 
   useEffect(() => {
     reconnectFromStorage()
@@ -29,13 +36,18 @@ export default function App() {
         <>
           <ViewSwitcher activeView={activeView} onSwitch={setActiveView} />
 
-          {activeView === 'credentials' && <CredentialTabs />}
+          {activeView === 'credentials' && (
+            <CredentialTabs
+              activeProvider={activeProvider}
+              onActiveProviderChange={setActiveProvider}
+            />
+          )}
           {activeView === 'usage' && <UsagePanel />}
           {activeView === 'settings' && <SettingsPanel />}
         </>
       )}
 
-      <BulkActionBar />
+      <BulkActionBar showTestAction={showCodexListActions} />
     </Layout>
   )
 }
