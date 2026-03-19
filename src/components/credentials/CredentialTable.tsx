@@ -143,6 +143,7 @@ export default function CredentialTable({ files, loading, sortMode, onSortChange
             onClick={handleColSort}
           />
           <div className="px-3 py-3 w-24 flex-shrink-0 whitespace-nowrap">提供商</div>
+          <div className="px-3 py-3 w-20 flex-shrink-0 whitespace-nowrap">套餐</div>
           <SortHeader
             label="状态 / 额度"
             col="status"

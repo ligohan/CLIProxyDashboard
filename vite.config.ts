@@ -2,8 +2,6 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
-import registerPlugin from './vite-register-plugin'
-import checkinPlugin from './vite-checkin-plugin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -11,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_ENDPOINT || 'http://localhost:8317'
 
   return {
-    plugins: [tailwindcss(), react(), registerPlugin(), checkinPlugin()],
+    plugins: [tailwindcss(), react()],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -19,7 +17,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       watch: {
-        ignored: ['**/output/**', '**/outputs/**', '**/results.txt'],
+        ignored: ['**/results.txt'],
       },
       ...(useProxy && {
         proxy: {

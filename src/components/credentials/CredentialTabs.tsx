@@ -3,12 +3,13 @@ import { useCredStore } from '@/store/credStore'
 import { useConnection } from '@/hooks/useConnection'
 import { useBatchTest } from '@/hooks/useBatchTest'
 import { getProviderColor } from '@/utils/keyUtils'
+import { getCodexPlanBucket, isCodexProviderName } from '@/utils/planUtils'
 import { getEffectiveStatus, isExpiredStatus } from '@/utils/statusUtils'
 import { deleteAuthFile, patchAuthFileStatus } from '@/lib/management'
 import CredentialTable, { type SortMode } from './CredentialTable'
 import UploadModal from './UploadModal'
 import type { AuthFile } from '@/types/api'
-type QuickFilter = 'all' | 'expired' | 'quota' | 'disabled' | 'error' | 'has-quota' | 'other' | 're-enable'
+type QuickFilter = 'all' | 'expired' | 'quota' | 'disabled' | 'error' | 'has-quota' | 'other' | 're-enable' | 'team' | 'free'
 const SORT_MODE_KEY = 'cliproxy_sort_mode'
 
 const VALID_SORT_MODES: SortMode[] = [
@@ -69,6 +70,8 @@ export default function CredentialTabs() {
     const set = new Set(files.map((f) => f.provider || f.type || '未知'))
     return ['全部', ...Array.from(set).sort()]
   }, [files])
+
+  const showCodexPlanFilters = activeProvider !== '全部' && isCodexProviderName(activeProvider)
 
   function getQuotaRemainingPercent(file: AuthFile): number | null {
     const result = testResults[file.name]
@@ -141,6 +144,7 @@ export default function CredentialTabs() {
     return filesInProviderScope.filter((f) => {
       if (quickFilter === 'all') return true
       const status = getEffectiveStatus(f, testResults[f.name])
+      const planBucket = getCodexPlanBucket(f, testResults[f.name])
       if (quickFilter === 'expired') return isExpiredStatus(status)
       if (quickFilter === 'quota') return status === 'quota'
       if (quickFilter === 'disabled') return f.disabled && status !== 'quota'
@@ -148,6 +152,8 @@ export default function CredentialTabs() {
       if (quickFilter === 'has-quota') return !f.disabled && hasAvailableQuota(f)
       if (quickFilter === 'other') return status !== 'quota' && status !== 'low' && !(!f.disabled && hasAvailableQuota(f))
       if (quickFilter === 're-enable') return f.disabled && hasAvailableQuota(f)
+      if (quickFilter === 'team') return planBucket === 'team'
+      if (quickFilter === 'free') return planBucket === 'free'
       return true
     })
   }, [filesInProviderScope, quickFilter, testResults])
@@ -307,6 +313,16 @@ export default function CredentialTabs() {
     [filesInProviderScope, testResults]
   )
 
+  const allTeamFiles = useMemo(
+    () => filesInProviderScope.filter((f) => getCodexPlanBucket(f, testResults[f.name]) === 'team'),
+    [filesInProviderScope, testResults]
+  )
+
+  const allFreeFiles = useMemo(
+    () => filesInProviderScope.filter((f) => getCodexPlanBucket(f, testResults[f.name]) === 'free'),
+    [filesInProviderScope, testResults]
+  )
+
   const allOtherFiles = useMemo(
     () => filesInProviderScope.filter((f) => {
       const s = getEffectiveStatus(f, testResults[f.name])
@@ -322,6 +338,21 @@ export default function CredentialTabs() {
       setQuickFilter('all')
     }
   }, [quickFilter, allOtherFiles.length])
+
+  useEffect(() => {
+    if (quickFilter === 'team' && allTeamFiles.length === 0) {
+      setQuickFilter('all')
+    }
+    if (quickFilter === 'free' && allFreeFiles.length === 0) {
+      setQuickFilter('all')
+    }
+  }, [quickFilter, allTeamFiles.length, allFreeFiles.length])
+
+  useEffect(() => {
+    if (!showCodexPlanFilters && (quickFilter === 'team' || quickFilter === 'free')) {
+      setQuickFilter('all')
+    }
+  }, [showCodexPlanFilters, quickFilter])
 
   const allExpiredFiles = useMemo(
     () => filesInProviderScope.filter((f) => {
@@ -599,6 +630,20 @@ export default function CredentialTabs() {
           onClick={() => setQuickFilter('re-enable')}
           label={`可启用 (${reenableQuotaRecoveredFiles.length})`}
         />
+        {showCodexPlanFilters && (
+          <QuickFilterButton
+            active={quickFilter === 'team'}
+            onClick={() => setQuickFilter('team')}
+            label={`Team (${allTeamFiles.length})`}
+          />
+        )}
+        {showCodexPlanFilters && (
+          <QuickFilterButton
+            active={quickFilter === 'free'}
+            onClick={() => setQuickFilter('free')}
+            label={`Free (${allFreeFiles.length})`}
+          />
+        )}
 
         {allErrorFiles.length > 0 && (
           <QuickFilterButton
@@ -610,7 +655,7 @@ export default function CredentialTabs() {
         )}
 
         <span className="ml-auto text-2xs text-subtle tabular-nums">
-          统计：过期 {allExpiredFiles.length} · 超额 {allQuotaFiles.length} · 有配额 {allHasQuotaFiles.length} · 其他 {allOtherFiles.length} · 已禁用 {allDisabledFiles.length} · 错误 {allErrorFiles.length} · 可启用 {reenableQuotaRecoveredFiles.length}
+          统计：过期 {allExpiredFiles.length} · 超额 {allQuotaFiles.length} · 有配额 {allHasQuotaFiles.length}{showCodexPlanFilters ? ` · Team ${allTeamFiles.length} · Free ${allFreeFiles.length}` : ''} · 其他 {allOtherFiles.length} · 已禁用 {allDisabledFiles.length} · 错误 {allErrorFiles.length} · 可启用 {reenableQuotaRecoveredFiles.length}
         </span>
       </div>
 

@@ -1,6 +1,7 @@
 import { useCredStore } from '@/store/credStore'
 import { deleteAuthFile, patchAuthFileStatus, testAuthFile } from '@/lib/management'
 import { formatRelativeTime, getProviderColor } from '@/utils/keyUtils'
+import { getCodexPlanBucket } from '@/utils/planUtils'
 import { getEffectiveStatus } from '@/utils/statusUtils'
 import StatusBadge from './StatusBadge'
 import type { AuthFile } from '@/types/api'
@@ -48,6 +49,7 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
 
   const providerColor = getProviderColor(file.provider)
   const providerLabel = (file.provider || file.type || '未知').toLowerCase()
+  const planBadge = getPlanBadge(file, testResult)
   const availabilityColor = file.disabled ? '#9A948C' : '#10A37F'
   const availabilityTitle = file.disabled ? '已禁用' : '已启用'
   const quotaResetLabel = getQuotaResetLabel(testResult)
@@ -86,6 +88,19 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
         >
           {providerLabel}
         </span>
+      </div>
+
+      <div className="px-3 py-3 w-20 flex-shrink-0">
+        {planBadge ? (
+          <span
+            className="inline-block text-2xs font-medium px-1.5 py-0.5 rounded whitespace-nowrap"
+            style={{ backgroundColor: planBadge.backgroundColor, color: planBadge.color }}
+          >
+            {planBadge.label}
+          </span>
+        ) : (
+          <span className="text-2xs text-subtle">—</span>
+        )}
       </div>
 
       <div className="px-3 py-3 w-56 flex-shrink-0">
@@ -133,6 +148,36 @@ export default function CredentialRow({ file, isSelected }: CredentialRowProps) 
       </div>
     </div>
   )
+}
+
+function getPlanBadge(
+  file: AuthFile,
+  testResult: ReturnType<typeof useCredStore.getState>['testResults'][string] | undefined,
+): { label: string; backgroundColor: string; color: string } | null {
+  const planBucket = getCodexPlanBucket(file, testResult)
+  if (planBucket === null) return null
+
+  if (planBucket === 'team' || planBucket === 'plus') {
+    return {
+      label: planBucket,
+      backgroundColor: '#E4F4EA',
+      color: '#2F7A4A',
+    }
+  }
+
+  if (planBucket === 'free') {
+    return {
+      label: 'free',
+      backgroundColor: '#F6EDC9',
+      color: '#8A6A18',
+    }
+  }
+
+  return {
+    label: '未知',
+    backgroundColor: '#ECE9E4',
+    color: '#6B6560',
+  }
 }
 
 function getQuotaResetLabel(testResult: ReturnType<typeof useCredStore.getState>['testResults'][string] | undefined): { short: string; full: string } {

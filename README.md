@@ -30,12 +30,6 @@ CLIProxyAPI auth dashboard.
 ### Usage Monitoring
 ![Usage](./public/Usage.png)
 
-### Daily Check-in
-![Sign](./public/Sign.png)
-
-### Registration Scripts
-![Scripts](./public/Scripts.png)
-
 ## Development
 
 ```bash

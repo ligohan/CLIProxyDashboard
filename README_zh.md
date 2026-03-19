@@ -30,12 +30,6 @@ CLIProxyAPI 认证管理面板。
 ### 使用监控
 ![使用监控](./public/Usage.png)
 
-### 每日签到
-![每日签到](./public/Sign.png)
-
-### 注册脚本
-![注册脚本](./public/Scripts.png)
-
 ## 开发
 
 ```bash
