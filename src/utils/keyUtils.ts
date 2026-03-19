@@ -1,4 +1,6 @@
-import type { TestStatus } from '@/types/api'
+import type { AuthFile, TestResult, TestStatus } from '@/types/api'
+
+export type CodexPlanBucket = 'team' | 'plus' | 'free' | 'unknown'
 
 export function maskKey(key: string): string {
   if (key.length <= 8) return key
@@ -42,4 +44,24 @@ export function getProviderColor(provider: string): string {
   if (lower.includes('qwen')) return '#7B5EA7'
   if (lower.includes('kiro')) return '#E67E22'
   return '#9A948C'
+}
+
+export function isCopilotProvider(file: AuthFile): boolean {
+  const provider = (file.provider || file.type || '').toLowerCase()
+  return provider === 'github-copilot' || provider === 'copilot'
+}
+
+export function isCodexProviderName(provider: string): boolean {
+  const normalized = provider.trim().toLowerCase()
+  return normalized.includes('codex') || normalized.includes('openai')
+}
+
+export function getCodexPlanBucket(file: AuthFile, testResult: TestResult | undefined): CodexPlanBucket | null {
+  if (isCopilotProvider(file)) return null
+
+  const rawPlanType = testResult?.quota?.plan_type?.trim().toLowerCase() ?? ''
+  if (rawPlanType.includes('team')) return 'team'
+  if (rawPlanType.includes('plus')) return 'plus'
+  if (rawPlanType.includes('free')) return 'free'
+  return 'unknown'
 }

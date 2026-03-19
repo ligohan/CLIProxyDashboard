@@ -1,7 +1,6 @@
 import { useCredStore } from '@/store/credStore'
 import { deleteAuthFile, patchAuthFileStatus, testAuthFile } from '@/lib/management'
-import { formatRelativeTime, getProviderColor } from '@/utils/keyUtils'
-import { getCodexPlanBucket } from '@/utils/planUtils'
+import { formatRelativeTime, getCodexPlanBucket, getProviderColor } from '@/utils/keyUtils'
 import { getEffectiveStatus } from '@/utils/statusUtils'
 import StatusBadge from './StatusBadge'
 import type { AuthFile } from '@/types/api'
