@@ -76,6 +76,14 @@ interface ApiCallResponse {
   body: string
 }
 
+interface ApiCallRequest {
+  authIndex?: string
+  auth_index?: string
+  method: string
+  url: string
+  header: Record<string, string>
+}
+
 function getHeaderValues(headers: Record<string, string[]>, name: string): string[] {
   const target = name.toLowerCase()
   for (const [key, values] of Object.entries(headers)) {
@@ -135,22 +143,63 @@ function shouldTreatChallengeAsQuota(authFile: AuthFile, now: number): boolean {
   return QUOTA_HINT_PATTERNS.some((pattern) => pattern.test(statusMessage))
 }
 
-/** Headers that match the latest codex CLI fingerprint */
-const CODEX_HEADERS = {
-  Authorization: 'Bearer $TOKEN$',
-  Accept: 'application/json',
-  'Content-Type': 'application/json',
-  'User-Agent': 'codex-cli/1.0.8 (Mac OS 26.0.1; arm64)',
-  Originator: 'codex',
+const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage'
+
+const CODEX_USER_AGENT = 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal'
+
+function getStringValue(source: Record<string, unknown>, key: string): string | undefined {
+  const value = source[key]
+  return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function getChatgptAccountId(authFile: AuthFile): string | undefined {
+  const idToken = authFile.id_token
+  if (idToken && typeof idToken === 'object' && !Array.isArray(idToken)) {
+    const candidates = [
+      getStringValue(idToken, 'chatgpt_account_id'),
+      getStringValue(idToken, 'chatgptAccountId'),
+      getStringValue(idToken, 'account_id'),
+      getStringValue(idToken, 'accountId'),
+    ]
+    const accountId = candidates.find(Boolean)
+    if (accountId) return accountId
+  }
+
+  if (typeof authFile.account === 'string') {
+    const account = authFile.account.trim()
+    if (account && isUuidLike(account)) return account
+  }
+
+  return undefined
+}
+
+function buildCodexApiCallRequest(authFile: AuthFile): ApiCallRequest {
+  const header: Record<string, string> = {
+    Authorization: 'Bearer $TOKEN$',
+    'Content-Type': 'application/json',
+    'User-Agent': CODEX_USER_AGENT,
+  }
+
+  const chatgptAccountId = getChatgptAccountId(authFile)
+  if (chatgptAccountId) {
+    header['Chatgpt-Account-Id'] = chatgptAccountId
+  }
+
+  return {
+    authIndex: authFile.auth_index,
+    auth_index: authFile.auth_index,
+    method: 'GET',
+    url: CODEX_USAGE_URL,
+    header,
+  }
 }
 
 async function requestCodexUsage(client: ApiClient, authFile: AuthFile): Promise<ApiCallResponse> {
-  return client.post<ApiCallResponse>('/api-call', {
-    auth_index: authFile.auth_index,
-    method: 'GET',
-    url: 'https://chatgpt.com/backend-api/codex/usage',
-    header: CODEX_HEADERS,
-  })
+  return client.post<ApiCallResponse>('/api-call', buildCodexApiCallRequest(authFile))
 }
 
 /**
